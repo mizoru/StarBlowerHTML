@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Star Blower</title>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+</head>
+
+<body>
+    <script>
+        // create the Phaser game object
+        var config = {
+            type: Phaser.AUTO,
+            width: 1240,
+            height: 660,
+            physics: {
+            default: 'arcade',
+            arcade: {
+                gravity: false
+            }
+            },
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+        var game = new Phaser.Game(config);
+
+        // game variables
+        var player;
+        var mobs;
+        var bullets;
+        var coins;
+        var score = 0;
+        var scoreText;
+        var upgradeText;
+        var level = 1;
+        var levelText;
+        var background;
+        var upgrades;
+        var upgradeButton1;
+        var upgradeButton2;
+        var upgradeButton3;
+
+        function preload() {
+            // preload game assets
+            this.load.image('player', 'data/vfx/player.png');
+            this.load.image('mob1', 'data/vfx/mob.png');
+            this.load.image('mob2', 'data/vfx/mob_2.png');
+            this.load.image('mob3', 'data/vfx/mob_3.png');
+            this.load.image('bullet', 'data/vfx/laser.png');
+            this.load.image('coin', 'data/vfx/coin.png');
+            this.load.image('startButton', 'data/vfx/coin.png');
+            this.load.image('upgradeButton', 'data/vfx/start_button.png');
+            this.load.image('velocityIndicator', 'data/vfx/velocity_indicator.png');
+            this.load.image('shootingSpeedIndicator', 'data/vfx/shooting_speed_indicator.png');
+            this.load.image('nullIndicator', 'data/vfx/null_indicator.png');
+            this.load.audio('hit', 'data/sfx/hit.wav');
+            this.load.audio('laser', 'data/sfx/laser.wav');
+            this.load.audio('coin', 'data/sfx/coin.wav');
+            this.load.audio('levelup', 'data/sfx/levelup.wav');
+        }
+
+        function create() {
+            // create the game objects
+            background = this.add.rectangle(620, 330, 1240, 660, 0x000000);
+            player = this.physics.add.sprite(620, 600, 'player');
+            player.setCollideWorldBounds(true);
+            player.health = 3;
+            player.velocity = 200;
+            player.velocityY = 100;
+            player.bulletSpeed = 400;
+            player.shootingSpeed = 70
+            player.timeSinceShot = 70
+            mobs = this.physics.add.group();
+            bullets = this.physics.add.group();
+            coins = this.physics.add.group();
+            scoreText = this.add.text(16, 16, 'Score: 0', { fontSize: '24px', fill: '#fff' });
+            upgradeText = this.add.text(16, 50, '', { fontSize: '24px', fill: '#fff' });
+            levelText = this.add.text(1000, 16, 'Level: 1', { fontSize: '24px', fill: '#fff' });
+            upgrades = this.add.container(620, 330);
+            upgradeButton1 = this.add.image(0, -120, 'upgradeButton').setInteractive();
+            upgradeButton1_indicator =  this.add.image(45, -140, 'velocityIndicator').setInteractive();
+            upgradeButton2 = this.add.image(0, 0, 'upgradeButton').setInteractive();
+            upgradeButton2_indicator =  this.add.image(45, -20, 'shootingSpeedIndicator').setInteractive();
+            upgradeButton3 = this.add.image(0, 120, 'upgradeButton').setInteractive();
+            upgradeButton3_indicator =  this.add.image(45, 100, 'nullIndicator').setInteractive();
+            upgrades.add([upgradeButton1, upgradeButton2, upgradeButton3]);
+            upgrades.add([upgradeButton1_indicator, upgradeButton2_indicator, upgradeButton3_indicator]);
+            upgrades.setVisible(false);
+
+            start = this.add.image(620, 330, 'startButton').setInteractive().on('pointerdown', startGame, this);
+            start.setVisible(false);
+
+
+            // add physics to game objects
+            this.physics.add.overlap(player, mobs, hitPlayer, null, this);
+            this.physics.add.overlap(bullets, mobs, hitEnemy, null, this);
+            this.physics.add.overlap(player, coins, collectCoin, null, this);
+
+            // add input events
+            // this.input.keyboard.on('keydown-L', shootBullet, this);
+            upgradeButton1.on('pointerdown', upgradeVelocity, this);
+            upgradeButton2.on('pointerdown', upgradeShootingSpeed, this);
+            upgradeButton3.on('pointerdown', upgradeBulletSpeed, this);
+
+            // start the game
+            spawnMobs();
+        }
+
+        function update() {
+            // update the game objects
+            player.setVelocityX(0);
+            player.setVelocityY(0);
+            if (this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A).isDown) {
+                player.setVelocityX(-player.velocity);
+            }
+            else if (this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D).isDown) {
+                player.setVelocityX(player.velocity);
+            }
+            if (this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W).isDown) {
+                player.setVelocityY(-player.velocityY);
+            }
+            else if (this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S).isDown) {
+                player.setVelocityY(player.velocityY);
+            }
+            if (this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).isDown & player.timeSinceShot > player.shootingSpeed) {
+                shootBullet.call(this);
+            }
+            
+            mobs.getChildren().forEach(function(mob) {
+                if (mob.y > 660) {
+                    mob.destroy();
+                }
+            })
+
+            // continuously spawn mobs
+            if (mobs.countActive(true) < 5 + level) {
+                spawnMobs();
+            }
+            player.timeSinceShot++
+            updateLevel();
+        }
+
+        function spawnMobs() {
+            // spawn the enemy mobs
+            var mobType = level % 3 + 1;
+            for (var i = 0; i < level * 2; i++) {
+                var mob = mobs.create(Phaser.Math.Between(60, 1180), Phaser.Math.Between(-60, 0), 'mob' + mobType);
+                mob.setVelocityY(Phaser.Math.Between(50, 200));
+            }
+        }
+
+        function spawnCoins() {
+            // spawn the coins
+            if (Phaser.Math.Between(1, 50) === 1) {
+                var coin = coins.create(Phaser.Math.Between(60, 1180), Phaser.Math.Between(-60, 0), 'coin');
+                coin.setVelocityY(Phaser.Math.Between(50, 200));
+            }
+        }
+
+        function shootBullet() {
+            // shoot a bullet
+            var bullet = bullets.create(player.x, player.y - 25, 'bullet');
+            bullet.setVelocityY(-player.bulletSpeed);
+            this.sound.play('laser');
+            player.timeSinceShot = 0
+        }
+
+        function hitPlayer(player, mob) {
+            // decrease player health and destroy the mob
+            player.health--;
+            mob.destroy();
+            this.sound.play('hit');
+            if (player.health === 0) {
+                gameOver();
+            }
+        }
+
+        function hitEnemy(bullet, mob) {
+            // destroy the bullet and the mob
+            bullet.destroy();
+            var coin = coins.create(mob.x, mob.y, 'coin');
+            coin.setVelocityY(mob.body.velocity.y)
+            // coin.setVelocityY(150)
+            mob.destroy();
+            this.sound.play('hit');
+            score += 10;
+            scoreText.setText('Score: ' + score);
+        }
+
+        function collectCoin(player, coin) {
+            // destroy the coin and increase the score
+            coin.destroy();
+            this.sound.play('coin');
+            score += 5;
+            scoreText.setText('Score: ' + score);
+        }
+
+        function updateLevel() {
+            // update the game level
+            if (score >= level * 100) {
+                level++;
+                levelText.setText('Level: ' + level);
+                spawnMobs();
+                background.fillColor = Phaser.Display.Color.RandomRGB().color;
+                showUpgrades();
+            }
+        }
+
+        function showUpgrades() {
+            // display the upgrade screen
+            upgradeText.setText('Choose an upgrade:');
+            upgradeButton1.setTexture('upgradeButton');
+            upgradeButton2.setTexture('upgradeButton');
+            upgradeButton3.setTexture('upgradeButton');
+            upgrades.getAt(0).setVisible(true);
+            upgrades.getAt(1).setVisible(true);
+            upgrades.getAt(2).setVisible(true);
+            
+            upgrades.setVisible(true);
+        }
+
+        function upgradeVelocity() {
+            // increase player velocity
+            if (score >= 50) {
+                player.velocity = player.velocity * 1.2;
+                player.velocityY = player.velocityY * 1.2;
+                score -= 50;
+                scoreText.setText('Score: ' + score);
+                upgradeText.setText('Velocity upgraded!');
+                this.sound.play('levelup');
+            }
+        }
+
+        function upgradeShootingSpeed() {
+            // increase player shooting speed
+            if (score >= 50) {
+                player.shootingSpeed = player.shootingSpeed * 0.8;
+                score -= 50;
+                scoreText.setText('Score: ' + score);
+                upgradeText.setText('Shooting speed upgraded!');
+                this.sound.play('levelup');
+            }
+        }
+
+        function upgradeBulletSpeed() {
+            // increase bullet speed
+            if (score >= 50) {
+                player.bulletSpeed = player.bulletSpeed * 1.2;
+                score -= 50;
+                scoreText.setText('Score: ' + score);
+                upgradeText.setText('Bullet speed upgraded!');
+                upgradeButton3.setTexture('shootingSpeedIndicator');
+                this.sound.play('levelup');
+            }
+        }
+
+        function gameOver() {
+            // show game over screen
+            mobs.clear(true, true);
+            bullets.clear(true, true);
+            coins.clear(true, true);
+            player.health = 3;
+            player.velocity = 200;
+            player.shootingSpeed = 150;
+            player.bulletSpeed = 600;
+            score = 0;
+            scoreText.setText('Score: 0');
+            level = 1;
+            levelText.setText('Level: 1');
+            background.fillColor = 0x000000;
+            upgrades.setVisible(true);
+            start.setVisible(true);
+        }
+
+        function startGame() {
+            // start a new game
+            this.scene.restart();
+        }
+    </script>
+</body>
+
+</html>
