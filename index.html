@@ -183,7 +183,6 @@
             bullet.destroy();
             var coin = coins.create(mob.x, mob.y, 'coin');
             coin.setVelocityY(mob.body.velocity.y)
-            // coin.setVelocityY(150)
             mob.destroy();
             this.sound.play('hit');
             score += 10;
@@ -200,7 +199,7 @@
 
         function updateLevel() {
             // update the game level
-            if (score >= level * 100) {
+            if (score >= level * 50) {
                 level++;
                 levelText.setText('Level: ' + level);
                 spawnMobs();
