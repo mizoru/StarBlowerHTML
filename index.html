@@ -168,6 +168,7 @@
             for (var i = 0; i < level; i++) {
                 var mob = mobs.create(Phaser.Math.Between(60, 1180), Phaser.Math.Between(-180, 0), 'mob' + mobType);
                 mob.setVelocityY(Phaser.Math.Between(90, 200));
+                mob.setVelocityX((Phaser.Math.Between(-20, 20) + Phaser.Math.Between(-20, 20) + Phaser.Math.Between(-20, 20) + Phaser.Math.Between(-20, 20)) / 4);
             }
         }
         function shootBullet() {
