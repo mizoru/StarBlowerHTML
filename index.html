@@ -149,13 +149,13 @@
             }
 
             mobs.getChildren().forEach(function (mob) {
-                if (mob.y > 660) {
+                if (mob.y > height+60) {
                     mob.destroy();
                 }
             })
 
             // continuously spawn mobs
-            if (mobs.countActive(true) < 5 + level) {
+            if (mobs.countActive(true) < 5 + level * 2) {
                 spawnMobs();
             }
             player.timeSinceShot++
@@ -165,9 +165,9 @@
         function spawnMobs() {
             // spawn the enemy mobs
             var mobType = level % 3 + 1;
-            for (var i = 0; i < level * 2; i++) {
-                var mob = mobs.create(Phaser.Math.Between(60, 1180), Phaser.Math.Between(-60, 0), 'mob' + mobType);
-                mob.setVelocityY(Phaser.Math.Between(50, 200));
+            for (var i = 0; i < level; i++) {
+                var mob = mobs.create(Phaser.Math.Between(60, 1180), Phaser.Math.Between(-180, 0), 'mob' + mobType);
+                mob.setVelocityY(Phaser.Math.Between(90, 200));
             }
         }
         function shootBullet() {
@@ -307,7 +307,8 @@
         }
 
         function gameOver() {
-            background.fillColor = initialBGColor
+            background.fillColor = initialBGColor;
+            bgColor = Phaser.Display.Color.ValueToColor(initialBGColor);
             mobs.clear(true, true);
             bullets.clear(true, true);
             coins.clear(true, true);
