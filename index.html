@@ -31,6 +31,7 @@
         var game = new Phaser.Game(config);
 
         // game variables
+        const initialBGColor = 0x130a1f;
         let bgColor;
         var player;
         var mobs;
@@ -71,7 +72,7 @@
 
         // gameplay scene
         var gameplayScene = new Phaser.Scene(sceneConfig);
-        
+
 
         gameplayScene.preload = function () {
             // preload game assets
@@ -94,7 +95,7 @@
 
         gameplayScene.create = function () {
             // create the game objects
-            bgColor = Phaser.Display.Color.ValueToColor(0x130a1f);
+            bgColor = Phaser.Display.Color.ValueToColor(initialBGColor);
             background = this.add.rectangle(width / 2, height / 2, width, height, bgColor.color);
             player = this.physics.add.sprite(width / 2, height - 60, 'player');
             player.setCollideWorldBounds(true);
@@ -108,12 +109,12 @@
             bullets = this.physics.add.group();
             coins = this.physics.add.group();
             scoreText = this.add.text(16, 16, '', { fontSize: '24px', fill: '#fff' });
-            scoreText.update = () => {scoreText.setText('Score: ' + score);}
+            scoreText.update = () => { scoreText.setText('Score: ' + score); }
             scoreText.update()
             levelText = this.add.text(1000, 16, 'Level: ' + level, { fontSize: '24px', fill: '#fff' });
 
             moneyText = this.add.text(width - 140, height - 30, '', { fontSize: '24px', fill: '#fff' });
-            moneyText.update = () => {moneyText.setText('🪙: ' + money);}
+            moneyText.update = () => { moneyText.setText('🪙: ' + money); }
             moneyText.update()
             // add physics to game objects
             this.physics.add.overlap(player, mobs, hitPlayer, null, this);
@@ -141,8 +142,10 @@
             else if (this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S).isDown) {
                 player.setVelocityY(player.velocityY);
             }
-            if (this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).isDown & player.timeSinceShot > player.shootingSpeed) {
+            if ((this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE).isDown && player.timeSinceShot > player.shootingSpeed) ||
+                (this.input.activePointer.primaryDown && player.timeSinceShot > player.shootingSpeed)) {
                 shootBullet.call(this);
+                console.log(Phaser.Input.Pointer.primaryDown)
             }
 
             mobs.getChildren().forEach(function (mob) {
@@ -246,13 +249,13 @@
             upgrades.add([upgradeButton1, upgradeButton2, upgradeButton3]);
             upgrades.add([upgradeButton1_indicator, upgradeButton2_indicator, upgradeButton3_indicator]);
             upgradesScoreText = this.add.text(16, 16, '' + score, { fontSize: '24px', fill: '#fff' });
-            upgradesScoreText.update = () => {upgradesScoreText.setText('Score: ' + score);}
+            upgradesScoreText.update = () => { upgradesScoreText.setText('Score: ' + score); }
             upgradesScoreText.update();
             upgradesMoneyText = this.add.text(width - 140, height - 30, '', { fontSize: '24px', fill: '#fff' });
-            upgradesMoneyText.update = () => {upgradesMoneyText.setText('🪙: ' + money);}
+            upgradesMoneyText.update = () => { upgradesMoneyText.setText('🪙: ' + money); }
             upgradesMoneyText.update()
 
-            this.events.on('wake', function() {
+            this.events.on('wake', function () {
                 upgradesMoneyText.update();
                 upgradesScoreText.update();
             });
@@ -304,6 +307,7 @@
         }
 
         function gameOver() {
+            background.fillColor = initialBGColor
             mobs.clear(true, true);
             bullets.clear(true, true);
             coins.clear(true, true);
