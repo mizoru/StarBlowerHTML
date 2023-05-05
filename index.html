@@ -112,7 +112,7 @@
             scoreText.update()
             levelText = this.add.text(1000, 16, 'Level: ' + level, { fontSize: '24px', fill: '#fff' });
 
-            moneyText = this.add.text(width - 100, height - 30, '', { fontSize: '24px', fill: '#fff' });
+            moneyText = this.add.text(width - 140, height - 30, '', { fontSize: '24px', fill: '#fff' });
             moneyText.update = () => {moneyText.setText('🪙: ' + money);}
             moneyText.update()
             // add physics to game objects
@@ -245,10 +245,17 @@
             upgradeButton3_indicator = this.add.image(45, 100, 'nullIndicator')
             upgrades.add([upgradeButton1, upgradeButton2, upgradeButton3]);
             upgrades.add([upgradeButton1_indicator, upgradeButton2_indicator, upgradeButton3_indicator]);
-            upgradesScoreText = this.add.text(16, 16, 'Score: ' + score, { fontSize: '24px', fill: '#fff' });
-            upgradesMoneyText = this.add.text(width - 100, height - 30, '', { fontSize: '24px', fill: '#fff' });
+            upgradesScoreText = this.add.text(16, 16, '' + score, { fontSize: '24px', fill: '#fff' });
+            upgradesScoreText.update = () => {upgradesScoreText.setText('Score: ' + score);}
+            upgradesScoreText.update();
+            upgradesMoneyText = this.add.text(width - 140, height - 30, '', { fontSize: '24px', fill: '#fff' });
             upgradesMoneyText.update = () => {upgradesMoneyText.setText('🪙: ' + money);}
             upgradesMoneyText.update()
+
+            this.events.on('wake', function() {
+                upgradesMoneyText.update();
+                upgradesScoreText.update();
+            });
             // upgrades.setVisible(false);
 
             // add input events
@@ -265,6 +272,7 @@
                 player.velocity = player.velocity * 1.2;
                 player.velocityY = player.velocityY * 1.2;
                 money -= velocityCost;
+                velocityCost = velocityCost * 1.4;
                 upgradesMoneyText.update()
                 upgradeText.setText('Velocity upgraded!');
                 this.sound.play('levelup');
@@ -276,6 +284,7 @@
             if (money >= shootingSeedCost) {
                 player.shootingSpeed = player.shootingSpeed * 0.9;
                 money -= shootingSeedCost;
+                shootingSeedCost = shootingSeedCost * 1.2
                 upgradesMoneyText.update()
                 upgradeText.setText('Shooting speed upgraded!');
                 this.sound.play('levelup');
@@ -287,7 +296,8 @@
             if (money >= bulletSpeedCost) {
                 player.bulletSpeed = player.bulletSpeed * 1.2;
                 money -= bulletSpeedCost;
-                upgradesMoneyText.update()
+                bulletSpeedCost = bulletSpeedCost * 1.4
+                upgradesMoneyText.update();
                 upgradeText.setText('Bullet speed upgraded!');
                 this.sound.play('levelup');
             }
@@ -307,7 +317,8 @@
             level = 1;
             player.x = width / 2;
             player.y = height - 60;
-            scoreText.setText('Score: ' + score);
+            scoreText.update();
+            moneyText.update()
             levelText.setText('Level: ' + level);
             this.scene.sleep('upgrades');
             this.scene.wake('gameplay');
